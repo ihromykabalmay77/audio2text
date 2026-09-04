@@ -13,6 +13,8 @@ let seconds = 0;
 let recognition = null;
 let currentFeature = "fix";
 let chatHistory = [];
+let accumulatedText = "";
+let interimText = "";
 
 // --- DOM Elements ---
 const btnRecord = document.getElementById('btnRecord');
@@ -168,14 +170,17 @@ function initSpeechRecognition() {
 
     recognition.onresult = (event) => {
         let finalTranscript = '';
-        let interimTranscript = '';
+        let newInterim = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
             const transcript = event.results[i][0].transcript;
             if (event.results[i].isFinal) finalTranscript += transcript;
-            else interimTranscript += transcript;
+            else newInterim += transcript;
         }
-        const displayText = finalTranscript || interimTranscript;
-        transcriptionResult.innerHTML = `<p>${displayText}</p>`;
+        if (finalTranscript) {
+            accumulatedText += finalTranscript;
+        }
+        interimText = newInterim;
+        updateTranscriptionDisplay();
     };
 
     recognition.onerror = (event) => {
@@ -226,16 +231,25 @@ btnStop.addEventListener('click', () => {
     btnStop.disabled = true;
     statusText.textContent = '✅ Rekaman selesai';
     statusText.classList.remove('recording');
+    interimText = "";
+    updateTranscriptionDisplay();
 
-    const finalText = getFinalTranscription();
-    if (finalText && finalText.trim()) {
-        autoNarrate(finalText);
+    if (accumulatedText && accumulatedText.trim()) {
+        autoNarrate(accumulatedText);
     }
 });
 
 function getFinalTranscription() {
-    const el = transcriptionResult.querySelector('p');
-    return el ? el.textContent : '';
+    return accumulatedText;
+}
+
+function updateTranscriptionDisplay() {
+    const fullText = accumulatedText + interimText;
+    if (fullText) {
+        transcriptionResult.innerHTML = `<p>${fullText}</p>`;
+    } else {
+        transcriptionResult.innerHTML = `<p class="placeholder">Teks transkripsi akan muncul di sini...</p>`;
+    }
 }
 
 // --- Auto Narrate after recording ---
@@ -362,6 +376,13 @@ function copyText(elementId) {
     const el = document.getElementById(elementId);
     const text = el.textContent || el.innerText;
     navigator.clipboard.writeText(text).then(() => showToast('Teks disalin!', 'success'));
+}
+
+function clearTranscription() {
+    accumulatedText = "";
+    interimText = "";
+    updateTranscriptionDisplay();
+    showToast('Transkripsi dihapus', 'success');
 }
 
 function copyAssistantResult() {
