@@ -62,10 +62,69 @@
                     <div id="narrativeResult" class="result-content">
                         <p class="placeholder">Narasi hasil AI akan muncul di sini...</p>
                     </div>
-                    <div id="aiLoading" class="loading" style="display:none;">
-                        <span class="spinner"></span> AI sedang memproses...
+                <div id="aiLoading" class="loading" style="display:none;">
+                    <span class="spinner"></span> AI sedang memproses...
+                </div>
+            </section>
+
+            <section class="category-section">
+                <h3>⚙️ Pilih Kategori Sebelum Generate</h3>
+                <div class="category-grid">
+                    <div class="category-item">
+                        <label for="writingStyle">Gaya Tulisan</label>
+                        <select id="writingStyle">
+                            <option value="Naratif">Naratif</option>
+                            <option value="Deskriptif">Deskriptif</option>
+                            <option value="Ekspositori" selected>Ekspositori</option>
+                            <option value="Persuasif">Persuasif</option>
+                            <option value="Argumentatif">Argumentatif</option>
+                            <option value="Prosedural">Prosedural</option>
+                        </select>
+                    </div>
+                    <div class="category-item">
+                        <label for="textFormat">Format Output</label>
+                        <select id="textFormat">
+                            <option value="Prosa Murni" selected>Prosa Murni</option>
+                            <option value="Teks Campuran">Teks Campuran</option>
+                            <option value="Dokumen Terstruktur">Dokumen Terstruktur</option>
+                            <option value="Tabel">Tabel</option>
+                            <option value="Daftar">Daftar</option>
+                        </select>
+                    </div>
+                    <div class="category-item">
+                        <label for="tone">Nada</label>
+                        <select id="tone">
+                            <option value="Formal" selected>Formal</option>
+                            <option value="Informal">Informal</option>
+                            <option value="Profesional">Profesional</option>
+                            <option value="Kasual">Kasual</option>
+                            <option value="Akademis">Akademis</option>
+                        </select>
+                    </div>
+                    <div class="category-item">
+                        <label for="audience">Target Pembaca</label>
+                        <select id="audience">
+                            <option value="Umum" selected>Umum</option>
+                            <option value="Akademis">Akademis</option>
+                            <option value="Profesional">Profesional</option>
+                            <option value="Teknis">Teknis</option>
+                            <option value="Eksekutif">Eksekutif</option>
+                        </select>
+                    </div>
+                    <div class="category-item">
+                        <label for="languageLevel">Tingkat Bahasa</label>
+                        <select id="languageLevel">
+                            <option value="Sederhana">Sederhana</option>
+                            <option value="Menengah" selected>Menengah</option>
+                            <option value="Kompleks">Kompleks</option>
+                            <option value="Teknis">Teknis</option>
+                        </select>
                     </div>
                 </div>
+                <button id="btnGenerate" class="btn btn-generate" onclick="generateWithCategory()">
+                    <span class="btn-icon">⚡</span>
+                    <span class="btn-text">Generate Narasi</span>
+                </button>
             </section>
         </div>
 
@@ -94,7 +153,64 @@
                 <!-- Input area -->
                 <div class="assistant-input">
                     <label id="featureLabel">Masukkan teks yang ingin diperbaiki:</label>
-                    <textarea id="assistantInput" rows="6" placeholder="Ketek atau tempel teks di sini..."></textarea>
+                    <textarea id="assistantInput" rows="6" placeholder="Ketik atau tempel teks di sini..."></textarea>
+                </div>
+
+                <!-- Category Selection -->
+                <div class="category-section">
+                    <h3>⚙️ Pilih Kategori</h3>
+                    <div class="category-grid">
+                        <div class="category-item">
+                            <label for="assistantWritingStyle">Gaya Tulisan</label>
+                            <select id="assistantWritingStyle">
+                                <option value="Naratif">Naratif</option>
+                                <option value="Deskriptif">Deskriptif</option>
+                                <option value="Ekspositori" selected>Ekspositori</option>
+                                <option value="Persuasif">Persuasif</option>
+                                <option value="Argumentatif">Argumentatif</option>
+                                <option value="Prosedural">Prosedural</option>
+                            </select>
+                        </div>
+                        <div class="category-item">
+                            <label for="assistantTextFormat">Format Output</label>
+                            <select id="assistantTextFormat">
+                                <option value="Prosa Murni" selected>Prosa Murni</option>
+                                <option value="Teks Campuran">Teks Campuran</option>
+                                <option value="Dokumen Terstruktur">Dokumen Terstruktur</option>
+                                <option value="Tabel">Tabel</option>
+                                <option value="Daftar">Daftar</option>
+                            </select>
+                        </div>
+                        <div class="category-item">
+                            <label for="assistantTone">Nada</label>
+                            <select id="assistantTone">
+                                <option value="Formal" selected>Formal</option>
+                                <option value="Informal">Informal</option>
+                                <option value="Profesional">Profesional</option>
+                                <option value="Kasual">Kasual</option>
+                                <option value="Akademis">Akademis</option>
+                            </select>
+                        </div>
+                        <div class="category-item">
+                            <label for="assistantAudience">Target Pembaca</label>
+                            <select id="assistantAudience">
+                                <option value="Umum" selected>Umum</option>
+                                <option value="Akademis">Akademis</option>
+                                <option value="Profesional">Profesional</option>
+                                <option value="Teknis">Teknis</option>
+                                <option value="Eksekutif">Eksekutif</option>
+                            </select>
+                        </div>
+                        <div class="category-item">
+                            <label for="assistantLanguageLevel">Tingkat Bahasa</label>
+                            <select id="assistantLanguageLevel">
+                                <option value="Sederhana">Sederhana</option>
+                                <option value="Menengah" selected>Menengah</option>
+                                <option value="Kompleks">Kompleks</option>
+                                <option value="Teknis">Teknis</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Action button -->

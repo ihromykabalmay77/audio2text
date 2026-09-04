@@ -1,11 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict
 import os
 import httpx
 
-app = FastAPI(title="Speech to Narasi API", version="2.0.0")
+app = FastAPI(title="Speech to Narasi API", version="3.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,10 +20,16 @@ GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6
 
 class TextRequest(BaseModel):
     text: str
+    categories: Optional[Dict[str, str]] = None
 
 class ChatRequest(BaseModel):
     message: str
     context: Optional[str] = None
+    categories: Optional[Dict[str, str]] = None
+
+class GenerateRequest(BaseModel):
+    text: str
+    categories: Dict[str, str]
 
 PROMPTS = {
     "fix": """Kamu adalah ahli bahasa Indonesia profesional. Perbaiki teks agar sesuai kaidah Bahasa Indonesia yang baik dan benar.
@@ -89,6 +95,55 @@ Gunakan bahasa Indonesia yang baik dan benar. Jawab singkat dan membantu.
 Pengguna: {message}"""
 }
 
+def build_dynamic_prompt(base_prompt: str, categories: Optional[Dict[str, str]] = None) -> str:
+    """Buat prompt dinamis berdasarkan kategori yang dipilih"""
+    if not categories:
+        return base_prompt
+    
+    category_instructions = []
+    
+    if categories.get('writing_style'):
+        category_instructions.append(f"- Gaya tulisan: {categories['writing_style']}")
+    if categories.get('text_format'):
+        category_instructions.append(f"- Format output: {categories['text_format']}")
+    if categories.get('tone'):
+        category_instructions.append(f"- Nada bahasa: {categories['tone']}")
+    if categories.get('audience'):
+        category_instructions.append(f"- Target pembaca: {categories['audience']}")
+    if categories.get('language_level'):
+        category_instructions.append(f"- Tingkat bahasa: {categories['language_level']}")
+    
+    if category_instructions:
+        category_text = "\n".join(category_instructions)
+        return f"""Kamu adalah penulis profesional berbahasa Indonesia. Gunakan kriteria berikut:
+{category_text}
+
+{base_prompt}"""
+    
+    return base_prompt
+
+def build_generate_prompt(text: str, categories: Dict[str, str]) -> str:
+    """Buat prompt khusus untuk endpoint generate"""
+    return f"""Kamu adalah penulis profesional berbahasa Indonesia. Buat narasi berdasarkan kriteria berikut:
+
+Gaya Tulisan: {categories.get('writing_style', 'Ekspositori')}
+Format Output: {categories.get('text_format', 'Prosa Murni')}
+Nada Bahasa: {categories.get('tone', 'Formal')}
+Target Pembaca: {categories.get('audience', 'Umum')}
+Tingkat Bahasa: {categories.get('language_level', 'Menengah')}
+
+Aturan:
+1. Buat narasi yang sesuai dengan kriteria di atas
+2. Pertahankan informasi penting dari teks asli
+3. Susun paragraf yang koheren dan runtut
+4. Gunakan bahasa yang sesuai dengan target pembaca
+5. Hasilkan teks yang rapi dan mudah dipahami
+
+Teks input:
+{text}
+
+Hasil narasi:"""
+
 def call_gemini(prompt: str) -> str:
     if not API_KEY:
         raise Exception("GEMINI_API_KEY tidak diset")
@@ -104,34 +159,38 @@ def call_gemini(prompt: str) -> str:
 
 @app.get("/api/health")
 def health():
-    return {"status": "healthy", "version": "2.0"}
+    return {"status": "healthy", "version": "3.0"}
 
 @app.post("/api/ai/fix")
 def fix_text(request: TextRequest):
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Teks kosong")
-    result = call_gemini(PROMPTS["fix"].format(text=request.text))
+    prompt = build_dynamic_prompt(PROMPTS["fix"].format(text=request.text), request.categories)
+    result = call_gemini(prompt)
     return {"status": "success", "original": request.text, "result": result.strip()}
 
 @app.post("/api/ai/narrate")
 def narrate_text(request: TextRequest):
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Teks kosong")
-    result = call_gemini(PROMPTS["narrate"].format(text=request.text))
+    prompt = build_dynamic_prompt(PROMPTS["narrate"].format(text=request.text), request.categories)
+    result = call_gemini(prompt)
     return {"status": "success", "original": request.text, "result": result.strip()}
 
 @app.post("/api/ai/summarize")
 def summarize_text(request: TextRequest):
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Teks kosong")
-    result = call_gemini(PROMPTS["summarize"].format(text=request.text))
+    prompt = build_dynamic_prompt(PROMPTS["summarize"].format(text=request.text), request.categories)
+    result = call_gemini(prompt)
     return {"status": "success", "original": request.text, "result": result.strip()}
 
 @app.post("/api/ai/rewrite")
 def rewrite_text(request: TextRequest):
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Teks kosong")
-    result = call_gemini(PROMPTS["rewrite"].format(text=request.text))
+    prompt = build_dynamic_prompt(PROMPTS["rewrite"].format(text=request.text), request.categories)
+    result = call_gemini(prompt)
     return {"status": "success", "original": request.text, "result": result.strip()}
 
 @app.post("/api/ai/chat")
@@ -141,5 +200,16 @@ def ai_chat(request: ChatRequest):
     prompt = PROMPTS["chat"].format(message=request.message)
     if request.context:
         prompt = f"Konteks: {request.context}\n\n{prompt}"
+    if request.categories:
+        prompt = build_dynamic_prompt(prompt, request.categories)
     result = call_gemini(prompt)
     return {"status": "success", "result": result.strip()}
+
+@app.post("/api/ai/generate")
+def generate_narrative(request: GenerateRequest):
+    """Generate narasi dengan kategori yang dipilih"""
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Teks kosong")
+    prompt = build_generate_prompt(request.text, request.categories)
+    result = call_gemini(prompt)
+    return {"status": "success", "original": request.text, "result": result.strip(), "categories": request.categories}

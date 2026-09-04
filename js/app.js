@@ -15,6 +15,7 @@ let currentFeature = "fix";
 let chatHistory = [];
 let accumulatedText = "";
 let interimText = "";
+let pendingNarrateText = ""; // Teks yang menunggu kategori dipilih
 
 // --- DOM Elements ---
 const btnRecord = document.getElementById('btnRecord');
@@ -229,39 +230,60 @@ btnStop.addEventListener('click', () => {
     stopTimer();
     btnRecord.disabled = false;
     btnStop.disabled = true;
-    statusText.textContent = '✅ Rekaman selesai';
+    statusText.textContent = '✅ Rekaman selesai - Pilih kategori lalu Generate';
     statusText.classList.remove('recording');
     interimText = "";
     updateTranscriptionDisplay();
 
+    // Simpan teks untuk menunggu pemilihan kategori
     if (accumulatedText && accumulatedText.trim()) {
-        autoNarrate(accumulatedText);
+        pendingNarrateText = accumulatedText;
+        document.getElementById('btnGenerate').disabled = false;
     }
 });
 
-function getFinalTranscription() {
-    return accumulatedText;
+// --- Get Categories from Dropdowns ---
+function getCategories() {
+    return {
+        writing_style: document.getElementById('writingStyle').value,
+        text_format: document.getElementById('textFormat').value,
+        tone: document.getElementById('tone').value,
+        audience: document.getElementById('audience').value,
+        language_level: document.getElementById('languageLevel').value
+    };
 }
 
-function updateTranscriptionDisplay() {
-    const fullText = accumulatedText + interimText;
-    if (fullText) {
-        transcriptionResult.innerHTML = `<p>${fullText}</p>`;
-    } else {
-        transcriptionResult.innerHTML = `<p class="placeholder">Teks transkripsi akan muncul di sini...</p>`;
+function getAssistantCategories() {
+    return {
+        writing_style: document.getElementById('assistantWritingStyle').value,
+        text_format: document.getElementById('assistantTextFormat').value,
+        tone: document.getElementById('assistantTone').value,
+        audience: document.getElementById('assistantAudience').value,
+        language_level: document.getElementById('assistantLanguageLevel').value
+    };
+}
+
+// --- Generate Narasi dengan Kategori ---
+async function generateWithCategory() {
+    if (!pendingNarrateText) {
+        showToast('Tidak ada teks untuk di-generate', 'error');
+        return;
     }
-}
 
-// --- Auto Narrate after recording ---
-async function autoNarrate(text) {
+    const categories = getCategories();
     aiLoading.style.display = 'flex';
     narrativeResult.innerHTML = '';
-    statusText.textContent = '🤖 AI sedang memproses narasi...';
+    statusText.textContent = '🤖 AI sedang memproses dengan kategori yang dipilih...';
+    document.getElementById('btnGenerate').disabled = true;
+
     try {
-        const res = await fetch(API_URL + '/api/ai/narrate', {
+        const res = await fetch(API_URL + '/api/ai/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
+            body: JSON.stringify({ 
+                text: pendingNarrateText,
+                categories: categories
+            })
         });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
         const data = await res.json();
@@ -277,11 +299,25 @@ async function autoNarrate(text) {
     }
 }
 
+function getFinalTranscription() {
+    return accumulatedText;
+}
+
+function updateTranscriptionDisplay() {
+    const fullText = accumulatedText + interimText;
+    if (fullText) {
+        transcriptionResult.innerHTML = `<p>${fullText}</p>`;
+    } else {
+        transcriptionResult.innerHTML = `<p class="placeholder">Teks transkripsi akan muncul di sini...</p>`;
+    }
+}
+
 // --- AI Assistant Processing ---
 async function processAssistant() {
     const input = document.getElementById('assistantInput').value.trim();
     if (!input) { showToast('Masukkan teks terlebih dahulu', 'error'); return; }
 
+    const categories = getAssistantCategories();
     const loading = document.getElementById('assistantLoading');
     const resultArea = document.getElementById('assistantResultArea');
     const resultDiv = document.getElementById('assistantResult');
@@ -296,7 +332,10 @@ async function processAssistant() {
         const res = await fetch(API_URL + endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: input })
+            body: JSON.stringify({ 
+                text: input,
+                categories: categories
+            })
         });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
         const data = await res.json();
