@@ -16,7 +16,7 @@ app.add_middleware(
 )
 
 API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + (API_KEY or "")
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
 
 class TextRequest(BaseModel):
     text: str
@@ -93,7 +93,7 @@ def call_gemini(prompt: str) -> str:
     if not API_KEY:
         raise Exception("GEMINI_API_KEY tidak diset")
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
-    headers = {"Content-Type": "application/json"}
+    headers = {"Content-Type": "application/json", "x-goog-api-key": API_KEY}
     response = httpx.post(GEMINI_URL, json=payload, headers=headers, timeout=60.0)
     if response.status_code != 200:
         raise Exception(f"Gemini API error: {response.status_code} - {response.text[:200]}")
