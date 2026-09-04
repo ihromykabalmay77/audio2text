@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech to Narasi - AI Assistant</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎙️ Speech to Narasi</h1>
+            <p>Rekam suara &bull; Transkripsi &bull; AI Assistant Bahasa Indonesia</p>
+        </header>
+
+        <!-- Tabs -->
+        <nav class="tabs">
+            <button class="tab active" data-tab="record">🎤 Rekam Suara</button>
+            <button class="tab" data-tab="assistant">🤖 AI Assistant</button>
+        </nav>
+
+        <!-- Tab: Rekam Suara -->
+        <div id="tab-record" class="tab-content active">
+            <section class="recording-section">
+                <div class="status-bar">
+                    <span id="statusText" class="status">Siap merekam</span>
+                    <span id="timer" class="timer">00:00</span>
+                </div>
+                <div class="controls">
+                    <button id="btnRecord" class="btn btn-record">
+                        <span class="btn-icon">🎤</span>
+                        <span class="btn-text">Mulai Rekam</span>
+                    </button>
+                    <button id="btnStop" class="btn btn-stop" disabled>
+                        <span class="btn-icon">⏹️</span>
+                        <span class="btn-text">Berhenti</span>
+                    </button>
+                </div>
+                <div id="visualizer" class="visualizer">
+                    <canvas id="waveCanvas"></canvas>
+                </div>
+            </section>
+
+            <section class="result-section">
+                <div class="result-box">
+                    <div class="result-header">
+                        <h3>📝 Hasil Transkripsi</h3>
+                        <button class="btn-small" onclick="copyText('transcriptionResult')">📋 Salin</button>
+                    </div>
+                    <div id="transcriptionResult" class="result-content">
+                        <p class="placeholder">Teks transkripsi akan muncul di sini...</p>
+                    </div>
+                </div>
+                <div class="result-box narasi-box">
+                    <div class="result-header">
+                        <h3>✨ Narasi Hasil AI</h3>
+                        <button class="btn-small" onclick="copyText('narrativeResult')">📋 Salin</button>
+                    </div>
+                    <div id="narrativeResult" class="result-content">
+                        <p class="placeholder">Narasi hasil AI akan muncul di sini...</p>
+                    </div>
+                    <div id="aiLoading" class="loading" style="display:none;">
+                        <span class="spinner"></span> AI sedang memproses...
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Tab: AI Assistant -->
+        <div id="tab-assistant" class="tab-content">
+            <section class="assistant-section">
+                <!-- Fitur buttons -->
+                <div class="assistant-features">
+                    <button class="feature-btn active" data-feature="fix">
+                        ✏️ Perbaiki Teks
+                    </button>
+                    <button class="feature-btn" data-feature="narrate">
+                        📄 Buat Narasi
+                    </button>
+                    <button class="feature-btn" data-feature="summarize">
+                        📋 Ringkas
+                    </button>
+                    <button class="feature-btn" data-feature="rewrite">
+                        🔄 Tulis Ulang
+                    </button>
+                    <button class="feature-btn" data-feature="chat">
+                        💬 Chat AI
+                    </button>
+                </div>
+
+                <!-- Input area -->
+                <div class="assistant-input">
+                    <label id="featureLabel">Masukkan teks yang ingin diperbaiki:</label>
+                    <textarea id="assistantInput" rows="6" placeholder="Ketek atau tempel teks di sini..."></textarea>
+                </div>
+
+                <!-- Action button -->
+                <button id="btnProcess" class="btn btn-process" onclick="processAssistant()">
+                    <span class="btn-icon">⚡</span>
+                    <span class="btn-text">Proses dengan AI</span>
+                </button>
+
+                <!-- Loading -->
+                <div id="assistantLoading" class="loading" style="display:none;">
+                    <span class="spinner"></span> AI sedang memproses...
+                </div>
+
+                <!-- Result area -->
+                <div class="assistant-result" id="assistantResultArea" style="display:none;">
+                    <div class="result-header">
+                        <h3>✨ Hasil:</h3>
+                        <button class="btn-small" onclick="copyAssistantResult()">📋 Salin</button>
+                    </div>
+                    <div id="assistantResult" class="result-content"></div>
+                </div>
+
+                <!-- Chat area (hidden by default) -->
+                <div id="chatArea" class="chat-area" style="display:none;">
+                    <div id="chatMessages" class="chat-messages">
+                        <div class="chat-message ai">
+                            <div class="chat-bubble">Halo! Saya AI Assistant. Ada yang bisa saya bantu?</div>
+                        </div>
+                    </div>
+                    <div class="chat-input-row">
+                        <input type="text" id="chatInput" placeholder="Ketik pesan..." onkeypress="if(event.key==='Enter')sendChat()">
+                        <button class="btn btn-chat" onclick="sendChat()">Kirim</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="errorToast" class="toast" style="display:none;"></div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
