@@ -458,6 +458,7 @@ async function generateWithCategory() {
         showToast('Gagal: ' + err.message, 'error');
     } finally {
         aiLoading.style.display = 'none';
+        document.getElementById('btnGenerate').disabled = false;
     }
 }
 

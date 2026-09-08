@@ -1,7 +1,7 @@
 // ===== CONFIGURATION =====
 // Saat deploy ke Vercel, API ada di domain yang sama
 // Saat local, ganti ke http://localhost:8000
-const API_BASE_URL = ""; // Kosongkan untuk Vercel (satu domain)
+const API_BASE_URL = "http://localhost:8000";
 const API_URL = API_BASE_URL || window.location.origin;
 // =========================
 
@@ -458,6 +458,7 @@ async function generateWithCategory() {
         showToast('Gagal: ' + err.message, 'error');
     } finally {
         aiLoading.style.display = 'none';
+        document.getElementById('btnGenerate').disabled = false;
     }
 }
 
