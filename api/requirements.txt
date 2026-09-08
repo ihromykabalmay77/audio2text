@@ -6,3 +6,4 @@ python-docx
 openpyxl
 PyPDF2
 python-pptx
+python-dotenv
