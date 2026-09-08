@@ -1,0 +1,8 @@
+fastapi
+httpx
+pydantic
+python-multipart
+python-docx
+openpyxl
+PyPDF2
+python-pptx
