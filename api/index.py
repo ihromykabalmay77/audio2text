@@ -19,10 +19,10 @@ app.add_middleware(
 )
 
 API_KEY = os.getenv("GEMINI_API_KEY")
-CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
-CEREBRAS_URL = "https://api.cerebras.ai/v1/chat/completions"
-CEREBRAS_MODEL = "gpt-oss-120b"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
 class TextRequest(BaseModel):
     text: str
@@ -164,30 +164,30 @@ def call_gemini(prompt: str) -> str:
         return data["candidates"][0]["content"]["parts"][0]["text"]
     raise Exception("Tidak ada respons dari Gemini API")
 
-def call_cerebras(prompt: str) -> str:
-    if not CEREBRAS_API_KEY:
-        raise Exception("CEREBRAS_API_KEY tidak diset")
+def call_groq(prompt: str) -> str:
+    if not GROQ_API_KEY:
+        raise Exception("GROQ_API_KEY tidak diset")
     payload = {
-        "model": CEREBRAS_MODEL,
+        "model": GROQ_MODEL,
         "messages": [{"role": "user", "content": prompt}],
         "max_tokens": 4096,
         "temperature": 0.7
     }
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {CEREBRAS_API_KEY}"
+        "Authorization": f"Bearer {GROQ_API_KEY}"
     }
-    response = httpx.post(CEREBRAS_URL, json=payload, headers=headers, timeout=60.0)
+    response = httpx.post(GROQ_URL, json=payload, headers=headers, timeout=60.0)
     if response.status_code != 200:
-        raise Exception(f"Cerebras API error: {response.status_code} - {response.text[:200]}")
+        raise Exception(f"Groq API error: {response.status_code} - {response.text[:200]}")
     data = response.json()
     if "choices" in data and len(data["choices"]) > 0:
         return data["choices"][0]["message"]["content"]
-    raise Exception("Tidak ada respons dari Cerebras API")
+    raise Exception("Tidak ada respons dari Groq API")
 
 def call_ai(prompt: str, provider: str = "gemini") -> str:
-    if provider == "cerebras":
-        return call_cerebras(prompt)
+    if provider == "groq":
+        return call_groq(prompt)
     return call_gemini(prompt)
 
 import re
