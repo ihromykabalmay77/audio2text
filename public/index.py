@@ -299,3 +299,13 @@ async def parse_file(file: UploadFile = File(...)):
 @app.post("/api/ai/ocr")
 async def ocr_image(file: UploadFile = File(...)):
     raise HTTPException(status_code=501, detail="OCR belum tersedia, gunakan input teks atau file")
+
+@app.post("/api/restart")
+def restart_server():
+    import subprocess, sys, os
+    try:
+        bat_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "restart-server.bat")
+        subprocess.Popen(["cmd", "/c", "start", "", bat_path], shell=False)
+        return {"status": "success", "message": "Server sedang restart..."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

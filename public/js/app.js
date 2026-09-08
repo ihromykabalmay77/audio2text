@@ -942,3 +942,33 @@ function downloadBlob(blob, filename) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+
+// --- Server Status & Restart ---
+async function checkLocalServer() {
+    try {
+        const res = await fetch('http://localhost:8000/api/health', { method: 'GET' });
+        if (res.ok) {
+            document.getElementById('btnRestart').style.display = 'inline-block';
+            return true;
+        }
+    } catch (e) {}
+    document.getElementById('btnRestart').style.display = 'none';
+    return false;
+}
+
+async function restartServer() {
+    if (!confirm('Restart uvicorn server?')) return;
+    try {
+        await fetch(API_URL + '/api/restart', { method: 'POST' });
+        showToast('Server sedang restart... tunggu 3 detik', 'success');
+        setTimeout(() => {
+            checkLocalServer();
+            showToast('Server sudah aktif!', 'success');
+        }, 3000);
+    } catch (e) {
+        showToast('Gagal restart: ' + e.message, 'error');
+    }
+}
+
+// Cek server lokal saat load
+checkLocalServer();
