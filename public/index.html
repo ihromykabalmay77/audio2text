@@ -94,6 +94,9 @@
                             <button id="btnDownloadWord" class="btn-output-action btn-download" onclick="downloadWord()" style="display:none;">
                                 ⬇️ Download Word
                             </button>
+                            <button id="btnPreviewPPTX" class="btn-output-action" onclick="previewPPTX()" style="display:none;">
+                                🖼️ Preview PPTX
+                            </button>
                             <button id="btnDownloadPPTX" class="btn-output-action btn-download" onclick="downloadPPTX()" style="display:none;">
                                 ⬇️ Download PPTX
                             </button>
@@ -107,6 +110,16 @@
                                 <button class="btn-small" onclick="closeWebPreview()">✕ Tutup</button>
                             </div>
                             <iframe id="webPreviewFrame" class="web-preview-frame"></iframe>
+                        </div>
+                    </div>
+                    <!-- PPTX Preview Modal -->
+                    <div id="pptxPreviewModal" class="modal" style="display:none;">
+                        <div class="modal-content" style="max-width:800px;">
+                            <div class="modal-header">
+                                <h3>📽️ Preview Presentasi</h3>
+                                <button class="btn-small" onclick="closePPTXPreview()">✕ Tutup</button>
+                            </div>
+                            <div id="pptxPreviewContainer" style="padding:20px;max-height:70vh;overflow-y:auto;"></div>
                         </div>
                     </div>
                 </div>

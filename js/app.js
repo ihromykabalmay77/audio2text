@@ -797,6 +797,7 @@ function handleOutputFormatChange() {
     const btnPreview = document.getElementById('btnPreviewWeb');
     const btnDownloadWeb = document.getElementById('btnDownloadWeb');
     const btnDownloadWord = document.getElementById('btnDownloadWord');
+    const btnPreviewPPTX = document.getElementById('btnPreviewPPTX');
     const btnDownloadPPTX = document.getElementById('btnDownloadPPTX');
 
     if (format === 'text') {
@@ -806,6 +807,7 @@ function handleOutputFormatChange() {
         btnPreview.style.display = format === 'web' ? 'flex' : 'none';
         btnDownloadWeb.style.display = format === 'web' ? 'flex' : 'none';
         btnDownloadWord.style.display = (format === 'word' || format === 'news' || format === 'executive') ? 'flex' : 'none';
+        btnPreviewPPTX.style.display = format === 'presentation' ? 'flex' : 'none';
         btnDownloadPPTX.style.display = format === 'presentation' ? 'flex' : 'none';
     }
 }
@@ -897,6 +899,34 @@ async function downloadWord() {
 }
 
 // --- Download PPTX ---
+function previewPPTX() {
+    if (!lastGeneratedJSON) return showToast('Belum ada hasil Presentasi. Generate dulu dengan format Presentasi.', 'error');
+    const container = document.getElementById('pptxPreviewContainer');
+    const slides = lastGeneratedJSON.slides || [];
+    let html = `<div style="text-align:center;margin-bottom:20px;">
+        <h2 style="color:#1a1a1a;margin-bottom:5px;">${escapeHtml(lastGeneratedJSON.title || 'Presentasi')}</h2>
+        ${lastGeneratedJSON.subtitle ? `<p style="color:#666;font-size:0.9em;">${escapeHtml(lastGeneratedJSON.subtitle)}</p>` : ''}
+        <p style="color:#999;font-size:0.8em;margin-top:10px;">${slides.length} slide</p>
+    </div>`;
+    slides.forEach((slide, i) => {
+        html += `<div style="background:#f8f9fa;border:1px solid #e0e0e0;border-radius:12px;padding:24px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                <span style="background:#3a7bd5;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:0.8em;font-weight:bold;">${i + 1}</span>
+                <h3 style="color:#1a1a1a;margin:0;">${escapeHtml(slide.title || '')}</h3>
+            </div>
+            <ul style="margin:0;padding-left:20px;">
+                ${(slide.bullets || []).map(b => `<li style="color:#444;margin:6px 0;line-height:1.5;">${escapeHtml(b.replace(/^\u2022\s*/, '').replace(/^\*\*?/, '').replace(/\*\*?$/, ''))}</li>`).join('')}
+            </ul>
+        </div>`;
+    });
+    container.innerHTML = html;
+    document.getElementById('pptxPreviewModal').style.display = 'flex';
+}
+
+function closePPTXPreview() {
+    document.getElementById('pptxPreviewModal').style.display = 'none';
+}
+
 function downloadPPTX() {
     if (!lastGeneratedJSON) return showToast('Belum ada hasil Presentasi. Generate dulu dengan format Presentasi.', 'error');
     try {
