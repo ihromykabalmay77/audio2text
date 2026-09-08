@@ -100,21 +100,27 @@ FORMAT RINGKASAN EKSEKUTIF - Susunan 4 bagian utama (total 1-2 halaman):
 
 Pastikan setiap bagian memiliki heading yang jelas dan terstruktur profesional.""",
         "Presentasi": """
-FORMAT PRESENTASI - Susunan 3 bagian utama:
-1. **PEMBUKAAN (10-15%)**:
-   - Salam dan perkenalan
-   - Penyampaian topik utama
-   - Daya tarik (hook): pertanyaan provokatif, fakta mengejutkan, atau kutipan relevan
-2. **ISI/MATERI (75-80%)**:
-   - Bagi menjadi 3 poin utama atau alur logis (masalah-solusi)
-   - Setiap poin sebagai section terpisah dengan heading
-   - Sertakan poin-poin penting sebagai bullet
-3. **PENUTUP (5-10%)**:
-   - Ringkasan materi
-   - Pernyataan penutup yang kuat
-   - Ajakan bertindak (call-to-action)
+FORMAT PRESENTASI - OUTPUT HANYA JSON VALID (tanpa markdown, tanpa teks lain):
+{{
+  "title": "Judul Utama Presentasi",
+  "subtitle": "Subtitle atau nama pembuat",
+  "slides": [
+    {{
+      "title": "Judul Slide",
+      "bullets": ["Poin penting 1", "Poin penting 2", "Poin penting 3"]
+    }}
+  ]
+}}
 
-Format setiap bagian sebagai section terpisah dengan heading yang jelas. Gunakan bullet untuk poin-poin penting."""
+ATURAN:
+- Output HARUS berupa JSON valid, diawali {{ dan diakhiri }}
+- JANGAN tambahkan teks apapun di luar JSON
+- Maksimal 10 slide
+- Slide pertama = judul utama, slide terakhir = penutup/kesimpulan
+- Setiap slide punya "title" (string) dan "bullets" (array of strings)
+- Bullets berisi poin-poin ringkas, maksimal 5 per slide
+- Bahasa Indonesia, formal, profesional
+- Gunakan informasi dari teks asli sesuai struktur presentasi: Pembukaan, Isi, Penutup"""
     }
 
     extra = format_instructions.get(fmt, "")

@@ -448,7 +448,20 @@ async function generateWithCategory() {
         });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
         const data = await res.json();
-        narrativeResult.innerHTML = renderFormattedText(data.result);
+        const outputFormat = document.getElementById('outputFormat').value;
+        if (outputFormat === 'presentation') {
+            try {
+                lastGeneratedJSON = JSON.parse(data.result);
+                narrativeResult.innerHTML = `<div class="placeholder">✅ Presentasi siap diunduh (${lastGeneratedJSON.slides?.length || 0} slide)</div>
+                    <pre style="text-align:left;font-size:0.85em;max-height:300px;overflow:auto;background:#f8f9fa;padding:12px;border-radius:8px">${escapeHtml(JSON.stringify(lastGeneratedJSON, null, 2))}</pre>`;
+            } catch (e) {
+                lastGeneratedJSON = null;
+                narrativeResult.innerHTML = renderFormattedText(data.result);
+            }
+        } else {
+            lastGeneratedJSON = null;
+            narrativeResult.innerHTML = renderFormattedText(data.result);
+        }
         lastGeneratedText = data.result;
         lastGeneratedCategories = categories;
         handleOutputFormatChange();
@@ -774,6 +787,7 @@ console.log('Speech to Narasi v2.0 initialized');
 // ===== OUTPUT FORMAT HANDLING =====
 let lastGeneratedText = '';
 let lastGeneratedCategories = {};
+let lastGeneratedJSON = null;
 
 function handleOutputFormatChange() {
     const format = document.getElementById('outputFormat').value;
@@ -781,6 +795,7 @@ function handleOutputFormatChange() {
     const btnPreview = document.getElementById('btnPreviewWeb');
     const btnDownloadWeb = document.getElementById('btnDownloadWeb');
     const btnDownloadWord = document.getElementById('btnDownloadWord');
+    const btnDownloadPPTX = document.getElementById('btnDownloadPPTX');
 
     if (format === 'text') {
         actions.style.display = 'none';
@@ -788,7 +803,8 @@ function handleOutputFormatChange() {
         actions.style.display = 'block';
         btnPreview.style.display = format === 'web' ? 'flex' : 'none';
         btnDownloadWeb.style.display = format === 'web' ? 'flex' : 'none';
-        btnDownloadWord.style.display = (format === 'word' || format === 'news' || format === 'executive' || format === 'presentation') ? 'flex' : 'none';
+        btnDownloadWord.style.display = (format === 'word' || format === 'news' || format === 'executive') ? 'flex' : 'none';
+        btnDownloadPPTX.style.display = format === 'presentation' ? 'flex' : 'none';
     }
 }
 
@@ -873,6 +889,40 @@ async function downloadWord() {
         const blob = await res.blob();
         downloadBlob(blob, 'narasi-laporan.docx');
         showToast('File Word berhasil didownload!', 'success');
+    } catch (err) {
+        showToast('Gagal: ' + err.message, 'error');
+    }
+}
+
+// --- Download PPTX ---
+function downloadPPTX() {
+    if (!lastGeneratedJSON) return showToast('Belum ada hasil Presentasi. Generate dulu dengan format Presentasi.', 'error');
+    try {
+        showToast('Membuat file PPTX...', 'success');
+        const pptx = new PptxGenJS();
+        pptx.layout = 'LAYOUT_WIDE';
+        pptx.author = 'Speech to Narasi';
+        pptx.title = lastGeneratedJSON.title || 'Presentasi';
+
+        const slides = lastGeneratedJSON.slides || [];
+        slides.forEach((slide, i) => {
+            const s = pptx.addSlide();
+            if (i === 0) {
+                s.addText(slide.title || '', { x: 0.5, y: 1.5, w: '90%', fontSize: 32, bold: true, color: '1a1a1a', align: 'center' });
+                if (lastGeneratedJSON.subtitle) {
+                    s.addText(lastGeneratedJSON.subtitle, { x: 0.5, y: 2.5, w: '90%', fontSize: 18, color: '555555', align: 'center' });
+                }
+            } else {
+                s.addText(slide.title || '', { x: 0.5, y: 0.3, w: '90%', fontSize: 24, bold: true, color: '1a1a1a' });
+                const bullets = (slide.bullets || []).map(b => ({ text: b, options: { bullet: true, fontSize: 16, color: '333333', breakLine: true } }));
+                if (bullets.length) {
+                    s.addText(bullets, { x: 0.8, y: 1.0, w: '85%', valign: 'top', lineSpacingMultiple: 1.5 });
+                }
+            }
+        });
+
+        pptx.writeFile({ fileName: (lastGeneratedJSON.title || 'presentasi') + '.pptx' });
+        showToast('File PPTX berhasil didownload!', 'success');
     } catch (err) {
         showToast('Gagal: ' + err.message, 'error');
     }
