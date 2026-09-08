@@ -22,7 +22,7 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY")
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
 CEREBRAS_URL = "https://api.cerebras.ai/v1/chat/completions"
-CEREBRAS_MODEL = "llama-3.1-8b"
+CEREBRAS_MODEL = "llama3.1-8b"
 
 class TextRequest(BaseModel):
     text: str
