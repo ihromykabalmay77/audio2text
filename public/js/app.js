@@ -786,7 +786,7 @@ function copyAssistantResult() {
 
 // --- Init ---
 updateFeatureUI();
-console.log('Speech to Narasi v2.0 initialized');
+console.log('Speech to Narasi v3.1 initialized');
 
 // ===== OUTPUT FORMAT HANDLING =====
 let lastGeneratedText = '';
