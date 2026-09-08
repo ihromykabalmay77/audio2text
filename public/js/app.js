@@ -448,7 +448,7 @@ async function generateWithCategory() {
         });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
         const data = await res.json();
-        narrativeResult.innerHTML = `<p>${data.result}</p>`;
+        narrativeResult.innerHTML = renderFormattedText(data.result);
         lastGeneratedText = accumulatedText;
         lastGeneratedCategories = categories;
         handleOutputFormatChange();
@@ -643,12 +643,12 @@ async function processAssistant() {
         });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
         const data = await res.json();
-        resultDiv.innerHTML = `<p>${data.result}</p>`;
+        resultDiv.innerHTML = renderFormattedText(data.result);
         resultArea.style.display = 'block';
         handleAssistantOutputFormatChange();
         showToast('Berhasil diproses!', 'success');
     } catch (err) {
-        resultDiv.innerHTML = `<p class="placeholder">Gagal: ${err.message}</p>`;
+        resultDiv.innerHTML = renderFormattedText('Gagal: ' + err.message);
         resultArea.style.display = 'block';
         showToast('Gagal: ' + err.message, 'error');
     } finally {
@@ -694,7 +694,7 @@ async function sendChat() {
         document.getElementById(loadingId).remove();
         messagesDiv.innerHTML += `
             <div class="chat-message ai">
-                <div class="chat-bubble">${escapeHtml(data.result)}</div>
+                <div class="chat-bubble">${renderFormattedText(data.result)}</div>
             </div>`;
 
         chatHistory.push('User: ' + msg);
@@ -714,6 +714,39 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function renderFormattedText(text) {
+    if (!text) return '';
+    let html = escapeHtml(text);
+    // Heading: lines that are ALL CAPS or start with capital and are short
+    html = html.replace(/^([A-Z][A-Z\s]{2,})$/gm, '<h3>$1</h3>');
+    // Bold **text**
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Italic *text*
+    html = html.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+    // Underline __text__
+    html = html.replace(/__(.+?)__/g, '<u>$1</u>');
+    // Numbered list: lines starting with 1. 2. 3. etc
+    html = html.replace(/^(\d+\.\s.+)$/gm, '<li class="num-item">$1</li>');
+    // Bullet list: lines starting with • - or *
+    html = html.replace(/^[•\-\*]\s(.+)$/gm, '<li class="bullet-item">$1</li>');
+    // Wrap consecutive <li> in <ol> or <ul>
+    html = html.replace(/((?:<li class="num-item">.*<\/li>\n?)+)/g, (match) => {
+        return '<ol>' + match.replace(/<li class="num-item">/g, '<li>').replace(/<\/li>/g, '</li>') + '</ol>';
+    });
+    html = html.replace(/((?:<li class="bullet-item">.*<\/li>\n?)+)/g, (match) => {
+        return '<ul>' + match.replace(/<li class="bullet-item">/g, '<li>').replace(/<\/li>/g, '</li>') + '</ul>';
+    });
+    // Paragraphs: double newline
+    html = html.replace(/\n\n/g, '</p><p>');
+    // Single newline to <br>
+    html = html.replace(/\n/g, '<br>');
+    // Wrap in paragraph if not already wrapped
+    if (!html.startsWith('<h') && !html.startsWith('<ol') && !html.startsWith('<ul') && !html.startsWith('<p>')) {
+        html = '<p>' + html + '</p>';
+    }
+    return html;
 }
 
 function copyText(elementId) {

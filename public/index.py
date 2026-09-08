@@ -35,9 +35,24 @@ class GenerateRequest(BaseModel):
 
 PROMPTS = {
     "fix": "Kamu adalah ahli bahasa Indonesia profesional. Perbaiki teks agar sesuai kaidah Bahasa Indonesia yang baik dan benar. Pertahankan makna asli teks. Jangan menambahkan atau mengurangi isi pesan.\n\nTeks:\n{text}\n\nHasil perbaikan:",
-    "narrate": "Kamu adalah penulis profesional berbahasa Indonesia. Ubah teks mentah menjadi narasi yang tersusun rapi, jelas, dan informatif. Susun paragraf yang koheren. Pertahankan informasi penting.\n\nTeks mentah:\n{text}\n\nNarasi:",
-    "summarize": "Kamu adalah asisten ahli merangkum teks dalam Bahasa Indonesia. Buat rangkuman yang singkat dan padat. Pertahankan poin-poin penting.\n\nTeks:\n{text}\n\nRangkuman:",
-    "rewrite": "Kamu adalah penulis kreatif berbahasa Indonesia. Tulis ulang teks dengan gaya bahasa yang lebih baik. Pertahankan makna asli.\n\nTeks:\n{text}\n\nHasil tulis ulang:",
+    "narrate": """Kamu adalah penulis profesional berbahasa Indonesia. Ubah teks mentah menjadi narasi yang tersusun rapi, jelas, dan informatif.
+
+ATURAN PENTING - Analisis dan Format Teks:
+1. **JUDUL/HEADING**: Jika ada bagian yang merupakan judul utama atau sub-judul, format sebagai heading dengan menulis di baris terpisah dan huruf besar di awal kata. Contoh: "Latar Belakang Masalah"
+2. **POIN-POIN/DAFTAR**: Jika ada bagian yang berisi item-item, langkah-langkah, atau poin-poin, format sebagai daftar bernomor atau bullet. Gunakan format:
+   - 1. 2. 3. untuk daftar berurutan
+   - • untuk daftar tidak berurutan
+3. **KALIMAT KUNCI/PENTING**: Jika ada kalimat atau frasa yang merupakan inti/poin penting, balut dengan tanda *asterisk* untuk italic. Contoh: *faktor utama yang mempengaruhi*.
+4. **PARAGRAF BIASA**: Sisanya susun sebagai paragraf yang koheren dan runtut.
+5. Pisahkan setiap section dengan baris kosong.
+6. Pertahankan semua informasi penting dari teks asli.
+
+Teks mentah:
+{text}
+
+Narasi dengan format:""",
+    "summarize": "Kamu adalah asisten ahli merangkum teks dalam Bahasa Indonesia. Buat rangkuman yang singkat dan padat. Pertahankan poin-poin penting. Gunakan format bullet (•) untuk poin-poin utama.\n\nTeks:\n{text}\n\nRangkuman:",
+    "rewrite": "Kamu adalah penulis kreatif berbahasa Indonesia. Tulis ulang teks dengan gaya bahasa yang lebih baik. Pertahankan makna asli. Format dengan heading, paragraf, dan bullet jika sesuai.\n\nTeks:\n{text}\n\nHasil tulis ulang:",
     "chat": "Kamu adalah AI Assistant berbahasa Indonesia. Jawab singkat dan membantu.\n\nPengguna: {message}"
 }
 
@@ -55,7 +70,32 @@ def build_dynamic_prompt(base_prompt: str, categories: Optional[Dict[str, str]] 
     return base_prompt
 
 def build_generate_prompt(categories: Dict[str, str]) -> str:
-    return f"Buat narasi dengan kriteria: Gaya={categories.get('writing_style','Ekspositori')}, Format={categories.get('text_format','Prosa Murni')}, Nada={categories.get('tone','Formal')}, Target={categories.get('audience','Umum')}, Tingkat={categories.get('language_level','Menengah')}\n\nTeks:\n{{text}}\n\nNarasi:"
+    style = categories.get('writing_style', 'Ekspositori')
+    tone = categories.get('tone', 'Formal')
+    audience = categories.get('audience', 'Umum')
+    fmt = categories.get('text_format', 'Prosa Murni')
+    level = categories.get('language_level', 'Menengah')
+    return f"""Buat narasi profesional berbahasa Indonesia dengan kriteria:
+- Gaya: {style}
+- Format: {fmt}
+- Nada: {tone}
+- Target Pembaca: {audience}
+- Tingkat Bahasa: {level}
+
+ATURAN PENTING - Analisis dan Format Teks:
+1. **JUDUL/HEADING**: Jika ada bagian yang merupakan judul utama atau sub-judul, format sebagai heading dengan menulis di baris terpisah dan huruf besar di awal kata. Contoh: "Latar Belakang Masalah"
+2. **POIN-POIN/DAFTAR**: Jika ada bagian yang berisi item-item, langkah-langkah, atau poin-poin, format sebagai daftar bernomor atau bullet. Gunakan format:
+   - 1. 2. 3. untuk daftar berurutan
+   - • untuk daftar tidak berurutan
+3. **KALIMAT KUNCI/PENTING**: Jika ada kalimat atau frasa yang merupakan inti/poin penting, balut dengan tanda *asterisk* untuk italic. Contoh: *faktor utama yang mempengaruhi*.
+4. **PARAGRAF BIASA**: Sisanya susun sebagai paragraf yang koheren dan runtut.
+5. Pisahkan setiap section dengan baris kosong.
+6. Pertahankan semua informasi penting dari teks asli.
+
+Teks:
+{{text}}
+
+Narasi dengan format:"""
 
 def call_gemini(prompt: str) -> str:
     if not API_KEY:

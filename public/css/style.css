@@ -870,3 +870,55 @@ header p {
 .editor-area u {
     text-decoration-color: #00d2ff;
 }
+
+/* Formatted AI Output */
+.result-content h3 {
+    font-size: 1.1em;
+    color: #00d2ff;
+    margin: 16px 0 8px;
+    font-weight: 700;
+}
+
+.result-content h2 {
+    font-size: 1.3em;
+    color: #00d2ff;
+    margin: 18px 0 10px;
+    font-weight: 700;
+}
+
+.result-content ol {
+    padding-left: 24px;
+    margin: 10px 0;
+}
+
+.result-content ul {
+    padding-left: 24px;
+    margin: 10px 0;
+    list-style-type: disc;
+}
+
+.result-content li {
+    margin: 6px 0;
+    line-height: 1.6;
+}
+
+.result-content li::marker {
+    color: #00d2ff;
+}
+
+.result-content em {
+    color: #a8b2d1;
+    font-style: italic;
+    background: rgba(0, 210, 255, 0.08);
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.result-content strong {
+    color: #e0e0e0;
+    font-weight: 700;
+}
+
+.result-content u {
+    text-decoration-color: #00d2ff;
+}
