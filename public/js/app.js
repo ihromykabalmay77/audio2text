@@ -901,17 +901,24 @@ async function downloadWord() {
 }
 
 // --- Download PPTX ---
-function previewPPTX() {
-    if (!lastGeneratedJSON && lastGeneratedText) {
-        try {
-            let jsonStr = lastGeneratedText.trim();
-            jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-            lastGeneratedJSON = JSON.parse(jsonStr);
-        } catch (e) {
-            return showToast('Hasil generate bukan JSON Presentasi. Generate ulang dengan format 📽️ Presentasi.', 'error');
-        }
+function tryParsePresentationJSON(text) {
+    if (!text) return null;
+    let s = text.trim();
+    s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    const start = s.indexOf('{');
+    const end = s.lastIndexOf('}');
+    if (start !== -1 && end > start) {
+        s = s.substring(start, end + 1);
     }
-    if (!lastGeneratedJSON) return showToast('Belum ada hasil Presentasi. Generate dulu dengan format 📽️ Presentasi.', 'error');
+    try { return JSON.parse(s); } catch(e) {}
+    return null;
+}
+
+function previewPPTX() {
+    if (!lastGeneratedJSON) {
+        lastGeneratedJSON = tryParsePresentationJSON(lastGeneratedText);
+    }
+    if (!lastGeneratedJSON) return showToast('Hasil generate bukan JSON Presentasi. Generate ulang dengan format 📽️ Presentasi.', 'error');
     const container = document.getElementById('pptxPreviewContainer');
     const slides = lastGeneratedJSON.slides || [];
     let html = `<div style="text-align:center;margin-bottom:20px;">
@@ -939,16 +946,10 @@ function closePPTXPreview() {
 }
 
 function downloadPPTX() {
-    if (!lastGeneratedJSON && lastGeneratedText) {
-        try {
-            let jsonStr = lastGeneratedText.trim();
-            jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-            lastGeneratedJSON = JSON.parse(jsonStr);
-        } catch (e) {
-            return showToast('Hasil generate bukan JSON Presentasi. Generate ulang dengan format 📽️ Presentasi.', 'error');
-        }
+    if (!lastGeneratedJSON) {
+        lastGeneratedJSON = tryParsePresentationJSON(lastGeneratedText);
     }
-    if (!lastGeneratedJSON) return showToast('Belum ada hasil Presentasi. Generate dulu dengan format 📽️ Presentasi.', 'error');
+    if (!lastGeneratedJSON) return showToast('Hasil generate bukan JSON Presentasi. Generate ulang dengan format 📽️ Presentasi.', 'error');
     try {
         showToast('Membuat file PPTX...', 'success');
         const pptx = new PptxGenJS();
