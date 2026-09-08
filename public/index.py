@@ -19,7 +19,10 @@ app.add_middleware(
 )
 
 API_KEY = os.getenv("GEMINI_API_KEY")
+CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY")
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
+CEREBRAS_URL = "https://api.cerebras.ai/v1/chat/completions"
+CEREBRAS_MODEL = "llama-3.1-8b"
 
 class TextRequest(BaseModel):
     text: str
@@ -32,6 +35,7 @@ class ChatRequest(BaseModel):
 class GenerateRequest(BaseModel):
     text: str
     categories: Dict[str, str]
+    provider: Optional[str] = "gemini"
 
 PROMPTS = {
     "fix": "Kamu adalah ahli bahasa Indonesia profesional. Perbaiki teks agar sesuai kaidah Bahasa Indonesia yang baik dan benar. Pertahankan makna asli teks. Jangan menambahkan atau mengurangi isi pesan.\n\nTeks:\n{text}\n\nHasil perbaikan:",
@@ -159,6 +163,32 @@ def call_gemini(prompt: str) -> str:
     if "candidates" in data and len(data["candidates"]) > 0:
         return data["candidates"][0]["content"]["parts"][0]["text"]
     raise Exception("Tidak ada respons dari Gemini API")
+
+def call_cerebras(prompt: str) -> str:
+    if not CEREBRAS_API_KEY:
+        raise Exception("CEREBRAS_API_KEY tidak diset")
+    payload = {
+        "model": CEREBRAS_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 4096,
+        "temperature": 0.7
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {CEREBRAS_API_KEY}"
+    }
+    response = httpx.post(CEREBRAS_URL, json=payload, headers=headers, timeout=60.0)
+    if response.status_code != 200:
+        raise Exception(f"Cerebras API error: {response.status_code} - {response.text[:200]}")
+    data = response.json()
+    if "choices" in data and len(data["choices"]) > 0:
+        return data["choices"][0]["message"]["content"]
+    raise Exception("Tidak ada respons dari Cerebras API")
+
+def call_ai(prompt: str, provider: str = "gemini") -> str:
+    if provider == "cerebras":
+        return call_cerebras(prompt)
+    return call_gemini(prompt)
 
 import re
 
@@ -336,7 +366,7 @@ def generate_narrative(request: GenerateRequest):
         raise HTTPException(status_code=400, detail="Teks kosong")
     prompt_template = build_generate_prompt(request.categories)
     prompt = build_dynamic_prompt(prompt_template.format(text=request.text), request.categories)
-    result = call_gemini(prompt)
+    result = call_ai(prompt, request.provider)
     return {"status": "success", "original": request.text, "result": result.strip(), "categories": request.categories}
 
 @app.post("/api/ai/generate-web")

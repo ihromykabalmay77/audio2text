@@ -438,12 +438,14 @@ async function generateWithCategory() {
     document.getElementById('btnGenerate').disabled = true;
 
     try {
+        const provider = document.getElementById('aiProvider').value;
         const res = await fetch(API_URL + '/api/ai/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 text: accumulatedText,
-                categories: categories
+                categories: categories,
+                provider: provider
             })
         });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
