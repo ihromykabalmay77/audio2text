@@ -788,7 +788,7 @@ function handleOutputFormatChange() {
         actions.style.display = 'block';
         btnPreview.style.display = format === 'web' ? 'flex' : 'none';
         btnDownloadWeb.style.display = format === 'web' ? 'flex' : 'none';
-        btnDownloadWord.style.display = format === 'word' ? 'flex' : 'none';
+        btnDownloadWord.style.display = (format === 'word' || format === 'news' || format === 'executive' || format === 'presentation') ? 'flex' : 'none';
     }
 }
 
@@ -805,7 +805,7 @@ function handleAssistantOutputFormatChange() {
         actions.style.display = 'block';
         btnPreview.style.display = format === 'web' ? 'flex' : 'none';
         btnDownloadWeb.style.display = format === 'web' ? 'flex' : 'none';
-        btnDownloadWord.style.display = format === 'word' ? 'flex' : 'none';
+        btnDownloadWord.style.display = (format === 'word' || format === 'news' || format === 'executive' || format === 'presentation') ? 'flex' : 'none';
     }
 }
 

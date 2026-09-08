@@ -449,7 +449,7 @@ async function generateWithCategory() {
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
         const data = await res.json();
         narrativeResult.innerHTML = renderFormattedText(data.result);
-        lastGeneratedText = accumulatedText;
+        lastGeneratedText = data.result;
         lastGeneratedCategories = categories;
         handleOutputFormatChange();
         statusText.textContent = '✅ Narasi selesai!';
@@ -788,7 +788,7 @@ function handleOutputFormatChange() {
         actions.style.display = 'block';
         btnPreview.style.display = format === 'web' ? 'flex' : 'none';
         btnDownloadWeb.style.display = format === 'web' ? 'flex' : 'none';
-        btnDownloadWord.style.display = format === 'word' ? 'flex' : 'none';
+        btnDownloadWord.style.display = (format === 'word' || format === 'news' || format === 'executive' || format === 'presentation') ? 'flex' : 'none';
     }
 }
 
@@ -805,7 +805,7 @@ function handleAssistantOutputFormatChange() {
         actions.style.display = 'block';
         btnPreview.style.display = format === 'web' ? 'flex' : 'none';
         btnDownloadWeb.style.display = format === 'web' ? 'flex' : 'none';
-        btnDownloadWord.style.display = format === 'word' ? 'flex' : 'none';
+        btnDownloadWord.style.display = (format === 'word' || format === 'news' || format === 'executive' || format === 'presentation') ? 'flex' : 'none';
     }
 }
 

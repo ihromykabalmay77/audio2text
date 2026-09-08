@@ -75,20 +75,62 @@ def build_generate_prompt(categories: Dict[str, str]) -> str:
     audience = categories.get('audience', 'Umum')
     fmt = categories.get('text_format', 'Prosa Murni')
     level = categories.get('language_level', 'Menengah')
-    return f"""Buat narasi profesional berbahasa Indonesia dengan kriteria:
+
+    format_instructions = {
+        "Prosa Murni": "",
+        "Teks Campuran": "",
+        "Dokumen Terstruktur": "",
+        "Tabel": "",
+        "Daftar": "",
+        "Berita": """
+FORMAT BERITA - Gunakan struktur piramida terbalik:
+1. **JUDUL BERITA (HEADLINE)**: Ringkas, menarik perhatian, mencerminkan isi pokok berita. Tulis di baris pertama.
+2. **DATELINE**: Keterangan tempat dan waktu kejadian. Contoh: "Jakarta, 5 September 2026"
+3. **TERAS BERITA (LEAD)**: Paragraf pertama yang merangkum inti informasi dan menjawab 5W+1H (Apa, Siapa, Di mana, Kapan, Mengapa, Bagaimana).
+4. **ISI BERITA (BODY)**: Penjabaran detail dari yang paling penting ke pendukung. Paragraf pendek 3-5 kalimat, satu ide per paragraf.
+5. **KAKI/PENUTUP BERITA**: Informasi tambahan, kutipan pendukung, atau penjelasan latar belakang.
+
+Pastikan setiap bagian dipisah dengan heading yang jelas.""",
+        "Ringkasan Eksekutif": """
+FORMAT RINGKASAN EKSEKUTIF - Susunan 4 bagian utama (total 1-2 halaman):
+1. **PENDAHULUAN DAN LATAR BELAKANG MASALAH**: Jelaskan inti masalah atau kebutuhan mendesak yang ingin diselesaikan.
+2. **TUJUAN DAN RUANG LINGKUP**: Uraikan tujuan utama pembuatan dokumen serta batasan/cakupan topik.
+3. **SOLUSI ATAU TEMUAN UTAMA**: Sampaikan hasil analisis, strategi, produk, atau solusi yang ditawarkan secara ringkas dan lugas.
+4. **KESIMPULAN DAN REKOMENDASI**: Tutup dengan ringkasan hasil akhir serta langkah lanjutan atau keputusan yang diharapkan.
+
+Pastikan setiap bagian memiliki heading yang jelas dan terstruktur profesional.""",
+        "Presentasi": """
+FORMAT PRESENTASI - Susunan 3 bagian utama:
+1. **PEMBUKAAN (10-15%)**:
+   - Salam dan perkenalan
+   - Penyampaian topik utama
+   - Daya tarik (hook): pertanyaan provokatif, fakta mengejutkan, atau kutipan relevan
+2. **ISI/MATERI (75-80%)**:
+   - Bagi menjadi 3 poin utama atau alur logis (masalah-solusi)
+   - Setiap poin sebagai section terpisah dengan heading
+   - Sertakan poin-poin penting sebagai bullet
+3. **PENUTUP (5-10%)**:
+   - Ringkasan materi
+   - Pernyataan penutup yang kuat
+   - Ajakan bertindak (call-to-action)
+
+Format setiap bagian sebagai section terpisah dengan heading yang jelas. Gunakan bullet untuk poin-poin penting."""
+    }
+
+    extra = format_instructions.get(fmt, "")
+    base = f"""Buat narasi profesional berbahasa Indonesia dengan kriteria:
 - Gaya: {style}
 - Format: {fmt}
 - Nada: {tone}
 - Target Pembaca: {audience}
 - Tingkat Bahasa: {level}
+{extra}
 
-ATURAN PENTING - Analisis dan Format Teks:
-1. **JUDUL/HEADING**: Jika ada bagian yang merupakan judul utama atau sub-judul, format sebagai heading dengan menulis di baris terpisah dan huruf besar di awal kata. Contoh: "Latar Belakang Masalah"
-2. **POIN-POIN/DAFTAR**: Jika ada bagian yang berisi item-item, langkah-langkah, atau poin-poin, format sebagai daftar bernomor atau bullet. Gunakan format:
-   - 1. 2. 3. untuk daftar berurutan
-   - • untuk daftar tidak berurutan
-3. **KALIMAT KUNCI/PENTING**: Jika ada kalimat atau frasa yang merupakan inti/poin penting, balut dengan tanda *asterisk* untuk italic. Contoh: *faktor utama yang mempengaruhi*.
-4. **PARAGRAF BIASA**: Sisanya susun sebagai paragraf yang koheren dan runtut.
+ATURAN UMUM:
+1. **JUDUL/HEADING**: Format sebagai heading di baris terpisah.
+2. **POIN-POIN**: Gunakan bullet (•) atau numbering (1. 2. 3.).
+3. **KALIMAT KUNCI**: Balut dengan *asterisk* untuk italic.
+4. **PARAGRAF**: Susun koheren dan runtut.
 5. Pisahkan setiap section dengan baris kosong.
 6. Pertahankan semua informasi penting dari teks asli.
 
@@ -96,6 +138,8 @@ Teks:
 {{text}}
 
 Narasi dengan format:"""
+
+    return base
 
 def call_gemini(prompt: str) -> str:
     if not API_KEY:
