@@ -168,12 +168,16 @@ def call_gemini(prompt: str) -> str:
         return data["candidates"][0]["content"]["parts"][0]["text"]
     raise Exception("Tidak ada respons dari Gemini API")
 
-def call_groq(prompt: str) -> str:
+def call_groq(prompt: str, system_msg: str = None) -> str:
     if not GROQ_API_KEY:
         raise Exception("GROQ_API_KEY tidak diset")
+    messages = []
+    if system_msg:
+        messages.append({"role": "system", "content": system_msg})
+    messages.append({"role": "user", "content": prompt})
     payload = {
         "model": GROQ_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": messages,
         "max_tokens": 4096,
         "temperature": 0.7
     }
@@ -189,12 +193,28 @@ def call_groq(prompt: str) -> str:
         return data["choices"][0]["message"]["content"]
     raise Exception("Tidak ada respons dari Groq API")
 
-def call_ai(prompt: str, provider: str = "gemini") -> str:
+import json
+import re
+
+def _try_parse_json(text: str):
+    s = text.strip()
+    s = re.sub(r'^```(?:json)?\s*', '', s)
+    s = re.sub(r'\s*```$', '', s)
+    s = s.strip()
+    start = s.find('{')
+    end = s.rfind('}')
+    if start != -1 and end > start:
+        s = s[start:end+1]
+    try:
+        return json.loads(s)
+    except:
+        return None
+
+def call_ai(prompt: str, provider: str = "gemini", system_msg: str = None) -> str:
     if provider == "groq":
-        return call_groq(prompt)
+        return call_groq(prompt, system_msg=system_msg)
     return call_gemini(prompt)
 
-import re
 
 def markdown_to_html(text: str) -> str:
     lines = text.split('\n')
@@ -368,9 +388,24 @@ def ai_chat(request: ChatRequest):
 def generate_narrative(request: GenerateRequest):
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Teks kosong")
+    fmt = request.categories.get('text_format', '')
     prompt_template = build_generate_prompt(request.categories)
     prompt = build_dynamic_prompt(prompt_template.format(text=request.text), request.categories)
     result = call_ai(prompt, request.provider)
+    
+    if fmt == "Presentasi":
+        parsed = _try_parse_json(result)
+        if not parsed:
+            system_msg = "Kamu HARUS mengembalikan HANYA JSON valid. Tidak ada teks lain, tidak ada markdown, tidak ada penjelasan. Mulai dengan { dan akhirkan dengan }."
+            result = call_ai(prompt, request.provider, system_msg=system_msg)
+            parsed = _try_parse_json(result)
+            if not parsed:
+                result = call_ai(prompt, "gemini", system_msg=system_msg)
+                parsed = _try_parse_json(result)
+            if not parsed:
+                raise HTTPException(status_code=500, detail="AI gagal menghasilkan JSON Presentasi. Coba lagi atau ganti provider.")
+            result = json.dumps(parsed, ensure_ascii=False)
+    
     return {"status": "success", "original": request.text, "result": result.strip(), "categories": request.categories}
 
 @app.post("/api/ai/generate-web")
