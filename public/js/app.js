@@ -599,6 +599,23 @@ function clearTranscription() {
     showToast('Transkripsi dihapus', 'success');
 }
 
+async function pasteText() {
+    try {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+            accumulatedText += (accumulatedText ? "\n" : "") + text.trim();
+            updateTranscriptionDisplay();
+            pendingNarrateText = accumulatedText;
+            document.getElementById('btnGenerate').disabled = false;
+            showToast('Teks berhasil ditempel!', 'success');
+        } else {
+            showToast('Clipboard kosong', 'error');
+        }
+    } catch (err) {
+        showToast('Gagal membaca clipboard: ' + err.message, 'error');
+    }
+}
+
 function copyAssistantResult() {
     const el = document.getElementById('assistantResult');
     navigator.clipboard.writeText(el.textContent).then(() => showToast('Teks disalin!', 'success'));
