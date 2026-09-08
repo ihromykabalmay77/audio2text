@@ -450,14 +450,18 @@ async function generateWithCategory() {
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
         const data = await res.json();
         const outputFormat = document.getElementById('outputFormat').value;
+        console.log('outputFormat:', outputFormat);
         if (outputFormat === 'presentation') {
             try {
                 let jsonStr = data.result.trim();
                 jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+                console.log('JSON parse input (first 200):', jsonStr.substring(0, 200));
                 lastGeneratedJSON = JSON.parse(jsonStr);
+                console.log('JSON PARSE OK, slides:', lastGeneratedJSON.slides?.length);
                 narrativeResult.innerHTML = `<div class="placeholder">✅ Presentasi siap diunduh (${lastGeneratedJSON.slides?.length || 0} slide)</div>
                     <pre style="text-align:left;font-size:0.85em;max-height:300px;overflow:auto;background:#f8f9fa;padding:12px;border-radius:8px">${escapeHtml(JSON.stringify(lastGeneratedJSON, null, 2))}</pre>`;
             } catch (e) {
+                console.log('JSON PARSE FAILED:', e.message);
                 lastGeneratedJSON = null;
                 narrativeResult.innerHTML = renderFormattedText(data.result);
             }
@@ -913,8 +917,10 @@ function tryParsePresentationJSON(text) {
 }
 
 function previewPPTX() {
+    console.log('previewPPTX: lastGeneratedJSON=', lastGeneratedJSON ? 'EXISTS' : 'null', 'lastGeneratedText length=', lastGeneratedText?.length);
     if (!lastGeneratedJSON) {
         lastGeneratedJSON = tryParsePresentationJSON(lastGeneratedText);
+        console.log('fallback parse result:', lastGeneratedJSON ? 'OK' : 'null');
     }
     if (!lastGeneratedJSON) return showToast('Hasil generate bukan JSON Presentasi. Generate ulang dengan format 📽️ Presentasi.', 'error');
     const container = document.getElementById('pptxPreviewContainer');
