@@ -16,13 +16,13 @@ let chatHistory = [];
 let accumulatedText = "";
 let interimText = "";
 let pendingNarrateText = ""; // Teks yang menunggu kategori dipilih
+const transcriptionEl = document.getElementById('transcriptionResult');
 
 // --- DOM Elements ---
 const btnRecord = document.getElementById('btnRecord');
 const btnStop = document.getElementById('btnStop');
 const statusText = document.getElementById('statusText');
 const timer = document.getElementById('timer');
-const transcriptionResult = document.getElementById('transcriptionResult');
 const narrativeResult = document.getElementById('narrativeResult');
 const aiLoading = document.getElementById('aiLoading');
 const errorToast = document.getElementById('errorToast');
@@ -392,6 +392,7 @@ btnStop.addEventListener('click', () => {
     statusText.textContent = '✅ Rekaman selesai - Pilih kategori lalu Generate';
     statusText.classList.remove('recording');
     interimText = "";
+    syncAccumulatedFromEditor();
     updateTranscriptionDisplay();
 
     // Simpan teks untuk menunggu pemilihan kategori
@@ -424,7 +425,8 @@ function getAssistantCategories() {
 
 // --- Generate Narasi dengan Kategori ---
 async function generateWithCategory() {
-    if (!pendingNarrateText) {
+    syncAccumulatedFromEditor();
+    if (!accumulatedText || !accumulatedText.trim()) {
         showToast('Tidak ada teks untuk di-generate', 'error');
         return;
     }
@@ -440,14 +442,14 @@ async function generateWithCategory() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                text: pendingNarrateText,
+                text: accumulatedText,
                 categories: categories
             })
         });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
         const data = await res.json();
         narrativeResult.innerHTML = `<p>${data.result}</p>`;
-        lastGeneratedText = data.result;
+        lastGeneratedText = accumulatedText;
         lastGeneratedCategories = categories;
         handleOutputFormatChange();
         statusText.textContent = '✅ Narasi selesai!';
@@ -463,19 +465,147 @@ async function generateWithCategory() {
 }
 
 function getFinalTranscription() {
-    return accumulatedText;
+    return transcriptionEl.innerText;
 }
 
 function updateTranscriptionDisplay() {
     const fullText = accumulatedText + interimText;
     if (fullText) {
-        transcriptionResult.innerHTML = `<p>${fullText}</p>`;
+        const paragraphs = accumulatedText.split('\n').filter(p => p.trim());
+        const interimHtml = interimText ? `<span style="color:#5a6a8a">${escapeHtml(interimText)}</span>` : '';
+        transcriptionEl.innerHTML = paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join('') + interimHtml;
     } else {
-        transcriptionResult.innerHTML = `<p class="placeholder">Teks transkripsi akan muncul di sini...</p>`;
+        transcriptionEl.innerHTML = '<p class="placeholder">Teks transkripsi akan muncul di sini...</p>';
     }
 }
 
-// --- AI Assistant Processing ---
+function syncAccumulatedFromEditor() {
+    const html = transcriptionEl.innerHTML;
+    if (html.includes('placeholder')) {
+        accumulatedText = "";
+    } else {
+        accumulatedText = transcriptionEl.innerText;
+    }
+}
+
+function execCmd(command, value) {
+    transcriptionEl.focus();
+    if (command === 'formatBlock') {
+        document.execCommand('formatBlock', false, '<' + value + '>');
+    } else {
+        document.execCommand(command, false, value || null);
+    }
+    syncAccumulatedFromEditor();
+}
+
+function copyRichText() {
+    const html = transcriptionEl.innerHTML;
+    const text = transcriptionEl.innerText;
+    const blob = new Blob([html], { type: 'text/html' });
+    const data = [new ClipboardItem({ 'text/html': blob, 'text/plain': new Blob([text], { type: 'text/plain' }) })];
+    navigator.clipboard.write(data).then(() => showToast('Teks disalin!', 'success')).catch(() => {
+        navigator.clipboard.writeText(text).then(() => showToast('Teks disalin!', 'success'));
+    });
+}
+
+function pasteText() {
+    navigator.clipboard.read().then(items => {
+        for (const item of items) {
+            for (const type of item.types) {
+                if (type === 'text/html') {
+                    item.getType(type).then(blob => {
+                        blob.text().then(html => {
+                            insertHtmlAtCursor(html);
+                            syncAccumulatedFromEditor();
+                            pendingNarrateText = accumulatedText;
+                            document.getElementById('btnGenerate').disabled = false;
+                            showToast('Teks berhasil ditempel!', 'success');
+                        });
+                    });
+                    return;
+                }
+            }
+        }
+        navigator.clipboard.readText().then(text => {
+            if (text && text.trim()) {
+                insertHtmlAtCursor('<p>' + escapeHtml(text) + '</p>');
+                syncAccumulatedFromEditor();
+                pendingNarrateText = accumulatedText;
+                document.getElementById('btnGenerate').disabled = false;
+                showToast('Teks berhasil ditempel!', 'success');
+            } else {
+                showToast('Clipboard kosong', 'error');
+            }
+        }).catch(() => showToast('Clipboard kosong', 'error'));
+    }).catch(err => {
+        navigator.clipboard.readText().then(text => {
+            if (text && text.trim()) {
+                insertHtmlAtCursor('<p>' + escapeHtml(text) + '</p>');
+                syncAccumulatedFromEditor();
+                pendingNarrateText = accumulatedText;
+                document.getElementById('btnGenerate').disabled = false;
+                showToast('Teks berhasil ditempel!', 'success');
+            } else {
+                showToast('Clipboard kosong', 'error');
+            }
+        }).catch(() => showToast('Gagal membaca clipboard', 'error'));
+    });
+}
+
+function insertHtmlAtCursor(html) {
+    transcriptionEl.focus();
+    const sel = window.getSelection();
+    if (sel.rangeCount) {
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        const frag = document.createDocumentFragment();
+        let lastNode;
+        while (temp.firstChild) {
+            lastNode = frag.appendChild(temp.firstChild);
+        }
+        range.insertNode(frag);
+        if (lastNode) {
+            range.setStartAfter(lastNode);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    } else {
+        transcriptionEl.innerHTML += html;
+    }
+}
+
+// Sync editor on input
+transcriptionEl.addEventListener('input', () => {
+    syncAccumulatedFromEditor();
+});
+
+transcriptionEl.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const html = e.clipboardData.getData('text/html');
+    const text = e.clipboardData.getData('text/plain');
+    if (html) {
+        insertHtmlAtCursor(html);
+    } else {
+        insertHtmlAtCursor('<p>' + escapeHtml(text) + '</p>');
+    }
+    syncAccumulatedFromEditor();
+});
+
+transcriptionEl.addEventListener('focus', () => {
+    if (transcriptionEl.querySelector('.placeholder')) {
+        transcriptionEl.innerHTML = '';
+    }
+});
+
+transcriptionEl.addEventListener('blur', () => {
+    if (!transcriptionEl.innerText.trim()) {
+        transcriptionEl.innerHTML = '<p class="placeholder">Teks transkripsi akan muncul di sini...</p>';
+    }
+    syncAccumulatedFromEditor();
+});
 async function processAssistant() {
     // Get text from active input method
     let input = '';
@@ -588,32 +718,15 @@ function escapeHtml(text) {
 
 function copyText(elementId) {
     const el = document.getElementById(elementId);
-    const text = el.textContent || el.innerText;
+    const text = el.innerText || el.textContent;
     navigator.clipboard.writeText(text).then(() => showToast('Teks disalin!', 'success'));
 }
 
 function clearTranscription() {
     accumulatedText = "";
     interimText = "";
-    updateTranscriptionDisplay();
+    transcriptionEl.innerHTML = '<p class="placeholder">Teks transkripsi akan muncul di sini...</p>';
     showToast('Transkripsi dihapus', 'success');
-}
-
-async function pasteText() {
-    try {
-        const text = await navigator.clipboard.readText();
-        if (text && text.trim()) {
-            accumulatedText += (accumulatedText ? "\n" : "") + text.trim();
-            updateTranscriptionDisplay();
-            pendingNarrateText = accumulatedText;
-            document.getElementById('btnGenerate').disabled = false;
-            showToast('Teks berhasil ditempel!', 'success');
-        } else {
-            showToast('Clipboard kosong', 'error');
-        }
-    } catch (err) {
-        showToast('Gagal membaca clipboard: ' + err.message, 'error');
-    }
 }
 
 function copyAssistantResult() {

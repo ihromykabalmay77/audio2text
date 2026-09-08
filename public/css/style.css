@@ -768,3 +768,105 @@ header p {
     border: none;
     background: white;
 }
+
+/* Editor Toolbar */
+.editor-toolbar {
+    display: flex;
+    gap: 2px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 12px 12px 0 0;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-bottom: none;
+    flex-wrap: wrap;
+}
+
+.editor-toolbar button {
+    padding: 6px 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    color: #ccd6f6;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 32px;
+    text-align: center;
+}
+
+.editor-toolbar button:hover {
+    background: rgba(0, 210, 255, 0.2);
+    border-color: #00d2ff;
+    color: #00d2ff;
+}
+
+.editor-toolbar button:active {
+    background: rgba(0, 210, 255, 0.4);
+}
+
+.toolbar-sep {
+    width: 1px;
+    background: rgba(255,255,255,0.15);
+    margin: 2px 4px;
+}
+
+.editor-area {
+    border-radius: 0 0 12px 12px;
+    border-top: none;
+    min-height: 120px;
+    max-height: 400px;
+    overflow-y: auto;
+    outline: none;
+    cursor: text;
+}
+
+.editor-area:focus {
+    border-color: #00d2ff;
+}
+
+.editor-area:empty::before {
+    content: attr(data-placeholder);
+    color: #5a6a8a;
+    font-style: italic;
+}
+
+.editor-area h2 {
+    font-size: 1.3em;
+    color: #00d2ff;
+    margin: 12px 0 8px;
+}
+
+.editor-area h3 {
+    font-size: 1.1em;
+    color: #3a7bd5;
+    margin: 10px 0 6px;
+}
+
+.editor-area blockquote {
+    border-left: 3px solid #00d2ff;
+    padding-left: 12px;
+    margin: 8px 0;
+    color: #8892b0;
+    font-style: italic;
+}
+
+.editor-area ul, .editor-area ol {
+    padding-left: 24px;
+    margin: 8px 0;
+}
+
+.editor-area li {
+    margin: 4px 0;
+}
+
+.editor-area b, .editor-area strong {
+    color: #e0e0e0;
+}
+
+.editor-area i, .editor-area em {
+    color: #a8b2d1;
+}
+
+.editor-area u {
+    text-decoration-color: #00d2ff;
+}

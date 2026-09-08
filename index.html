@@ -47,11 +47,26 @@
                         <h3>📝 Hasil Transkripsi</h3>
                         <div style="display:flex;gap:6px;">
                             <button class="btn-small" onclick="pasteText()">📋 Tempel</button>
-                            <button class="btn-small" onclick="copyText('transcriptionResult')">📋 Salin</button>
+                            <button class="btn-small" onclick="copyRichText()">📋 Salin</button>
                             <button class="btn-small" onclick="clearTranscription()">🗑️ Hapus</button>
                         </div>
                     </div>
-                    <div id="transcriptionResult" class="result-content">
+                    <div class="editor-toolbar" id="editorToolbar">
+                        <button onclick="execCmd('bold')" title="Bold"><b>B</b></button>
+                        <button onclick="execCmd('italic')" title="Italic"><i>I</i></button>
+                        <button onclick="execCmd('underline')" title="Underline"><u>U</u></button>
+                        <span class="toolbar-sep"></span>
+                        <button onclick="execCmd('formatBlock','h2')" title="Heading">H</button>
+                        <button onclick="execCmd('formatBlock','h3')" title="Sub Heading">H3</button>
+                        <button onclick="execCmd('formatBlock','p')" title="Paragraf">¶</button>
+                        <span class="toolbar-sep"></span>
+                        <button onclick="execCmd('insertUnorderedList')" title="Bullet List">•≡</button>
+                        <button onclick="execCmd('insertOrderedList')" title="Numbered List">1.</button>
+                        <span class="toolbar-sep"></span>
+                        <button onclick="execCmd('formatBlock','blockquote')" title="Quote">❝</button>
+                        <button onclick="execCmd('removeFormat')" title="Hapus Format">⌧</button>
+                    </div>
+                    <div id="transcriptionResult" class="result-content editor-area" contenteditable="true">
                         <p class="placeholder">Teks transkripsi akan muncul di sini...</p>
                     </div>
                 </div>
