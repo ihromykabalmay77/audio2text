@@ -391,20 +391,19 @@ def generate_narrative(request: GenerateRequest):
     fmt = request.categories.get('text_format', '')
     prompt_template = build_generate_prompt(request.categories)
     prompt = build_dynamic_prompt(prompt_template.format(text=request.text), request.categories)
-    result = call_ai(prompt, request.provider)
     
     if fmt == "Presentasi":
+        system_msg = "Kamu HARUS mengembalikan HANYA JSON valid. Tidak ada teks lain, tidak ada markdown, tidak ada penjelasan. Mulai dengan { dan akhirkan dengan }."
+        result = call_ai(prompt, request.provider, system_msg=system_msg)
         parsed = _try_parse_json(result)
-        if not parsed:
-            system_msg = "Kamu HARUS mengembalikan HANYA JSON valid. Tidak ada teks lain, tidak ada markdown, tidak ada penjelasan. Mulai dengan { dan akhirkan dengan }."
-            result = call_ai(prompt, request.provider, system_msg=system_msg)
+        if not parsed and request.provider == "groq":
+            result = call_ai(prompt, "gemini", system_msg=system_msg)
             parsed = _try_parse_json(result)
-            if not parsed:
-                result = call_ai(prompt, "gemini", system_msg=system_msg)
-                parsed = _try_parse_json(result)
-            if not parsed:
-                raise HTTPException(status_code=500, detail="AI gagal menghasilkan JSON Presentasi. Coba lagi atau ganti provider.")
-            result = json.dumps(parsed, ensure_ascii=False)
+        if not parsed:
+            raise HTTPException(status_code=500, detail="AI gagal menghasilkan JSON Presentasi. Coba lagi.")
+        result = json.dumps(parsed, ensure_ascii=False)
+    else:
+        result = call_ai(prompt, request.provider)
     
     return {"status": "success", "original": request.text, "result": result.strip(), "categories": request.categories}
 

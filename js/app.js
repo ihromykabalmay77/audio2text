@@ -1,7 +1,6 @@
 // ===== CONFIGURATION =====
 // Saat deploy ke Vercel, API ada di domain yang sama
-// Saat local, ganti ke http://localhost:8000
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
 const API_URL = API_BASE_URL || window.location.origin;
 // =========================
 
@@ -1048,7 +1047,7 @@ function downloadBlob(blob, filename) {
 // --- Server Status & Restart ---
 async function checkLocalServer() {
     try {
-        const res = await fetch('http://localhost:8000/api/health', { method: 'GET' });
+        const res = await fetch(API_URL + '/api/health', { method: 'GET' });
         if (res.ok) {
             document.getElementById('btnRestart').style.display = 'inline-block';
             return true;
