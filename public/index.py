@@ -104,7 +104,13 @@ FORMAT RINGKASAN EKSEKUTIF - Susunan 4 bagian utama (total 1-2 halaman):
 
 Pastikan setiap bagian memiliki heading yang jelas dan terstruktur profesional.""",
         "Presentasi": """
-FORMAT PRESENTASI - OUTPUT HANYA JSON VALID (tanpa markdown, tanpa teks lain):
+FORMAT PRESENTASI - OUTPUT HANYA JSON VALID MURNI:
+- JANGAN gunakan ``` (markdown code block)
+- JANGAN tambahkan teks penjelasan
+- Langsung mulai dengan {{ dan akhiri dengan }}
+- Output harus bisa langsung di-parse sebagai JSON
+
+Contoh format yang benar:
 {{
   "title": "Judul Utama Presentasi",
   "subtitle": "Subtitle atau nama pembuat",
@@ -117,8 +123,6 @@ FORMAT PRESENTASI - OUTPUT HANYA JSON VALID (tanpa markdown, tanpa teks lain):
 }}
 
 ATURAN:
-- Output HARUS berupa JSON valid, diawali {{ dan diakhiri }}
-- JANGAN tambahkan teks apapun di luar JSON
 - Maksimal 10 slide
 - Slide pertama = judul utama, slide terakhir = penutup/kesimpulan
 - Setiap slide punya "title" (string) dan "bullets" (array of strings)

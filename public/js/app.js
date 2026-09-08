@@ -453,7 +453,9 @@ async function generateWithCategory() {
         const outputFormat = document.getElementById('outputFormat').value;
         if (outputFormat === 'presentation') {
             try {
-                lastGeneratedJSON = JSON.parse(data.result);
+                let jsonStr = data.result.trim();
+                jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+                lastGeneratedJSON = JSON.parse(jsonStr);
                 narrativeResult.innerHTML = `<div class="placeholder">✅ Presentasi siap diunduh (${lastGeneratedJSON.slides?.length || 0} slide)</div>
                     <pre style="text-align:left;font-size:0.85em;max-height:300px;overflow:auto;background:#f8f9fa;padding:12px;border-radius:8px">${escapeHtml(JSON.stringify(lastGeneratedJSON, null, 2))}</pre>`;
             } catch (e) {
