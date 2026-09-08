@@ -902,7 +902,7 @@ async function downloadWord() {
 
 // --- Download PPTX ---
 function tryParsePresentationJSON(text) {
-    if (!text) return null;
+    if (!text) { console.log('PPTX: no text'); return null; }
     let s = text.trim();
     s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
     const start = s.indexOf('{');
@@ -910,11 +910,12 @@ function tryParsePresentationJSON(text) {
     if (start !== -1 && end > start) {
         s = s.substring(start, end + 1);
     }
-    try { return JSON.parse(s); } catch(e) {}
-    return null;
+    console.log('PPTX parse attempt:', s.substring(0, 100));
+    try { const r = JSON.parse(s); console.log('PPTX parse OK:', r.slides?.length, 'slides'); return r; } catch(e) { console.log('PPTX parse FAILED:', e.message); return null; }
 }
 
 function previewPPTX() {
+    console.log('PPTX preview clicked. lastGeneratedJSON:', lastGeneratedJSON ? 'exists' : 'null', 'lastGeneratedText:', lastGeneratedText ? lastGeneratedText.substring(0, 100) : 'null');
     if (!lastGeneratedJSON) {
         lastGeneratedJSON = tryParsePresentationJSON(lastGeneratedText);
     }
