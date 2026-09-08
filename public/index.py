@@ -110,6 +110,130 @@ def call_gemini(prompt: str) -> str:
         return data["candidates"][0]["content"]["parts"][0]["text"]
     raise Exception("Tidak ada respons dari Gemini API")
 
+import re
+
+def markdown_to_html(text: str) -> str:
+    lines = text.split('\n')
+    html_lines = []
+    in_list = False
+    list_type = None
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            if in_list:
+                html_lines.append(f'</{list_type}>')
+                in_list = False
+            html_lines.append('')
+            continue
+        # Heading: all caps line or short capitalized line
+        if stripped.isupper() and len(stripped) > 3 and not stripped.startswith(('•', '-', '*', '1', '2', '3', '4', '5', '6', '7', '8', '9')):
+            if in_list:
+                html_lines.append(f'</{list_type}>')
+                in_list = False
+            html_lines.append(f'<h2>{stripped.title()}</h2>')
+            continue
+        # Numbered list
+        m = re.match(r'^(\d+)\.\s+(.+)', stripped)
+        if m:
+            if not in_list or list_type != 'ol':
+                if in_list:
+                    html_lines.append(f'</{list_type}>')
+                html_lines.append('<ol>')
+                in_list = True
+                list_type = 'ol'
+            html_lines.append(f'<li>{m.group(2)}</li>')
+            continue
+        # Bullet list
+        if stripped.startswith(('•', '-', '*')) and len(stripped) > 2:
+            content = stripped.lstrip('•-* ').strip()
+            if not in_list or list_type != 'ul':
+                if in_list:
+                    html_lines.append(f'</{list_type}>')
+                html_lines.append('<ul>')
+                in_list = True
+                list_type = 'ul'
+            html_lines.append(f'<li>{content}</li>')
+            continue
+        # End list if we're here
+        if in_list:
+            html_lines.append(f'</{list_type}>')
+            in_list = False
+        # Bold
+        formatted = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', stripped)
+        # Italic
+        formatted = re.sub(r'\*([^*\n]+)\*', r'<em>\1</em>', formatted)
+        # Underline
+        formatted = re.sub(r'__(.+?)__', r'<u>\1</u>', formatted)
+        html_lines.append(f'<p>{formatted}</p>')
+    if in_list:
+        html_lines.append(f'</{list_type}>')
+    return '\n'.join(html_lines)
+
+def add_docx_formatting(doc, text: str):
+    import re
+    lines = text.split('\n')
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        # Heading: all caps
+        if stripped.isupper() and len(stripped) > 3 and not stripped.startswith(('•', '-', '*', '1', '2', '3', '4', '5', '6', '7', '8', '9')):
+            doc.add_heading(stripped.title(), level=2)
+            continue
+        # Numbered list
+        m = re.match(r'^(\d+)\.\s+(.+)', stripped)
+        if m:
+            p = doc.add_paragraph(style='List Number')
+            content = m.group(2)
+            # Handle bold/italic in list items
+            parts = re.split(r'(\*\*.*?\*\*|\*[^*\n]+\*|__.*?__)', content)
+            for part in parts:
+                if part.startswith('**') and part.endswith('**'):
+                    run = p.add_run(part[2:-2])
+                    run.bold = True
+                elif part.startswith('*') and part.endswith('*') and not part.startswith('**'):
+                    run = p.add_run(part[1:-1])
+                    run.italic = True
+                elif part.startswith('__') and part.endswith('__'):
+                    run = p.add_run(part[2:-2])
+                    run.underline = True
+                else:
+                    p.add_run(part)
+            continue
+        # Bullet list
+        if stripped.startswith(('•', '-', '*')) and len(stripped) > 2:
+            content = stripped.lstrip('•-* ').strip()
+            p = doc.add_paragraph(style='List Bullet')
+            parts = re.split(r'(\*\*.*?\*\*|\*[^*\n]+\*|__.*?__)', content)
+            for part in parts:
+                if part.startswith('**') and part.endswith('**'):
+                    run = p.add_run(part[2:-2])
+                    run.bold = True
+                elif part.startswith('*') and part.endswith('*') and not part.startswith('**'):
+                    run = p.add_run(part[1:-1])
+                    run.italic = True
+                elif part.startswith('__') and part.endswith('__'):
+                    run = p.add_run(part[2:-2])
+                    run.underline = True
+                else:
+                    p.add_run(part)
+            continue
+        # Regular paragraph with formatting
+        p = doc.add_paragraph()
+        parts = re.split(r'(\*\*.*?\*\*|\*[^*\n]+\*|__.*?__)', stripped)
+        for part in parts:
+            if part.startswith('**') and part.endswith('**'):
+                run = p.add_run(part[2:-2])
+                run.bold = True
+            elif part.startswith('*') and part.endswith('*') and not part.startswith('**'):
+                run = p.add_run(part[1:-1])
+                run.italic = True
+            elif part.startswith('__') and part.endswith('__'):
+                run = p.add_run(part[2:-2])
+                run.underline = True
+            else:
+                p.add_run(part)
+
 @app.get("/api/health")
 def health():
     return {"status": "healthy", "version": "7.0"}
@@ -172,19 +296,7 @@ def generate_web(request: GenerateRequest):
     style = request.categories.get('writing_style', 'Ekspositori')
     tone = request.categories.get('tone', 'Formal')
     audience = request.categories.get('audience', 'Umum')
-    paragraphs = request.text.split('\n\n')
-    if len(paragraphs) == 1:
-        paragraphs = request.text.split('\n')
-    content_html = ""
-    for i, para in enumerate(paragraphs):
-        para = para.strip()
-        if not para: continue
-        if i == 0 and len(para) < 100:
-            content_html += f'<h1>{para}</h1>\n'
-        elif para.startswith(('#', '•', '-', '1.', '2.', '3.', '4.', '5.')):
-            content_html += f'<div class="highlight">{para}</div>\n'
-        else:
-            content_html += f'<p>{para}</p>\n'
+    content_html = markdown_to_html(request.text)
     if not content_html:
         content_html = f'<p>{request.text}</p>'
     html = f"""<!DOCTYPE html>
@@ -197,7 +309,16 @@ def generate_web(request: GenerateRequest):
 body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.8;color:#333;background:#fafafa}}
 .container{{max-width:720px;margin:0 auto;padding:40px 20px;background:white;min-height:100vh}}
 h1{{font-size:2em;margin-bottom:24px;color:#1a1a1a;line-height:1.3}}
-p{{margin-bottom:20px;font-size:1.1em;color:#444}}
+h2{{font-size:1.5em;margin:28px 0 12px;color:#1a1a1a;line-height:1.3;border-bottom:2px solid #3a7bd5;padding-bottom:8px}}
+h3{{font-size:1.2em;margin:20px 0 10px;color:#333}}
+p{{margin-bottom:16px;font-size:1.1em;color:#444}}
+ol,ul{{margin:16px 0;padding-left:28px}}
+li{{margin:8px 0;font-size:1.05em;color:#444}}
+li::marker{{color:#3a7bd5;font-weight:700}}
+strong{{color:#1a1a1a}}
+em{{color:#555;font-style:italic;background:#f0f7ff;padding:2px 6px;border-radius:3px}}
+u{{text-decoration-color:#3a7bd5}}
+blockquote{{border-left:4px solid #3a7bd5;padding:12px 20px;margin:20px 0;background:#f8f9fa;border-radius:0 8px 8px 0;font-style:italic;color:#555}}
 .highlight{{background:linear-gradient(135deg,#f0f7ff,#e8f4fd);border-left:4px solid #3a7bd5;padding:16px 20px;margin:24px 0;border-radius:0 8px 8px 0;font-size:1.05em}}
 .meta{{display:flex;gap:16px;margin-bottom:32px;padding-bottom:16px;border-bottom:1px solid #eee;font-size:0.85em;color:#888}}
 .meta span{{background:#f0f7ff;padding:4px 12px;border-radius:20px;color:#3a7bd5}}
@@ -223,8 +344,8 @@ def generate_word(request: GenerateRequest):
         import io
         from fastapi.responses import StreamingResponse
         doc = Document()
-        style = doc.styles['Normal']
-        font = style.font
+        normal_style = doc.styles['Normal']
+        font = normal_style.font
         font.name = 'Calibri'
         font.size = Pt(11)
         title = doc.add_heading('Narasi Dokumen', 0)
@@ -235,20 +356,7 @@ def generate_word(request: GenerateRequest):
         meta_run.font.size = Pt(9)
         meta_run.font.color.rgb = RGBColor(128, 128, 128)
         doc.add_paragraph()
-        paragraphs = request.text.split('\n\n')
-        if len(paragraphs) == 1:
-            paragraphs = request.text.split('\n')
-        for i, para in enumerate(paragraphs):
-            para = para.strip()
-            if not para: continue
-            if i == 0 and len(para) < 100:
-                doc.add_heading(para, level=1)
-            elif para.startswith('#'):
-                doc.add_heading(para.lstrip('#').strip(), level=2)
-            elif para.startswith(('•', '-', '*')):
-                doc.add_paragraph(para.lstrip('•-* ').strip(), style='List Bullet')
-            else:
-                doc.add_paragraph(para)
+        add_docx_formatting(doc, request.text)
         buffer = io.BytesIO()
         doc.save(buffer)
         buffer.seek(0)

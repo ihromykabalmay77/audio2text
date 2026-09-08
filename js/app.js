@@ -449,7 +449,7 @@ async function generateWithCategory() {
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
         const data = await res.json();
         narrativeResult.innerHTML = renderFormattedText(data.result);
-        lastGeneratedText = accumulatedText;
+        lastGeneratedText = data.result;
         lastGeneratedCategories = categories;
         handleOutputFormatChange();
         statusText.textContent = '✅ Narasi selesai!';
